@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Library Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --ink:      #1a1208;
+            --cream:    #faf6ee;
+            --parch:    #f0e8d5;
+            --gold:     #c8962a;
+            --gold-lt:  #e8c96a;
+            --rust:     #9e3b1e;
+            --sage:     #2e5945;
+            --muted:    #7a6e5f;
+            --border:   #d8cdb8;
+            --serif:    'Playfair Display', Georgia, serif;
+            --sans:     'DM Sans', system-ui, sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--sans); background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+        header {
+            background: var(--ink);
+            padding: 24px 40px;
+            display: flex; align-items: center; gap: 16px;
+            border-bottom: 3px solid var(--gold);
+        }
+        header h1 { font-family: var(--serif); font-size: 1.8rem; color: var(--gold-lt); }
+        header p  { color: #908070; font-size: .82rem; margin-top: 2px; }
+
+        .wrap { max-width: 1160px; margin: 0 auto; padding: 32px 20px 60px; }
+
+        .tabs {
+            display: flex; gap: 4px;
+            background: var(--parch);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 5px;
+            margin-bottom: 28px;
+            width: fit-content;
+        }
+        .tab {
+            padding: 9px 22px; border-radius: 7px;
+            font-family: var(--sans); font-size: .88rem; font-weight: 500;
+            cursor: pointer; border: none; background: transparent; color: var(--muted);
+            transition: all .18s;
+        }
+        .tab:hover  { color: var(--ink); }
+        .tab.active { background: var(--ink); color: var(--gold-lt); }
+
+        .panel { display: none; animation: up .22s ease; }
+        .panel.active { display: block; }
+        @keyframes up { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+        .card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 26px 28px;
+            margin-bottom: 22px;
+        }
+        .card-title {
+            font-family: var(--serif); font-size: 1.2rem;
+            margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 14px; margin-bottom: 26px;
+        }
+        .stat {
+            background: #fff; border: 1px solid var(--border);
+            border-left: 4px solid var(--gold);
+            border-radius: 10px; padding: 18px 20px;
+        }
+        .stat.green { border-left-color: var(--sage); }
+        .stat.red   { border-left-color: var(--rust); }
+        .stat-label { font-size: .75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+        .stat-value { font-family: var(--serif); font-size: 2rem; margin-top: 4px; }
+
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 620px) { .two-col { grid-template-columns: 1fr; } }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+        .field { display: flex; flex-direction: column; gap: 5px; }
+        .field.full { grid-column: 1 / -1; }
+        label { font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+
+        input[type=text], input[type=number] {
+            padding: 10px 13px;
+            border: 1.5px solid var(--border); border-radius: 7px;
+            font-family: var(--sans); font-size: .93rem;
+            background: var(--cream); color: var(--ink);
+            outline: none; transition: border-color .18s;
+        }
+        input:focus { border-color: var(--gold); background: #fff; }
+
+        .btns { margin-top: 18px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .btn {
+            padding: 10px 22px; border: none; border-radius: 7px;
+            font-family: var(--sans); font-weight: 600; font-size: .88rem;
+            cursor: pointer; transition: all .16s;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+        .btn-dark    { background: var(--ink);  color: var(--gold-lt); }
+        .btn-dark:not(:disabled):hover  { background: #2e2414; transform: translateY(-1px); }
+        .btn-green   { background: var(--sage); color: #e8f5ef; }
+        .btn-green:not(:disabled):hover { background: #3d6e56; transform: translateY(-1px); }
+        .btn-red     { background: var(--rust); color: #fde8e0; }
+        .btn-red:not(:disabled):hover   { background: #b04620; transform: translateY(-1px); }
+        .btn-ghost   { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
+        .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+        .btn-sm { padding: 6px 13px; font-size: .8rem; }
+
+        .search-row { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+        .search-row input { flex: 1; min-width: 180px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+        th {
+            background: var(--ink); color: var(--gold-lt);
+            font-family: var(--serif); font-weight: 500;
+            padding: 12px 15px; text-align: left;
+        }
+        th:first-child { border-radius: 7px 0 0 0; }
+        th:last-child  { border-radius: 0 7px 0 0; }
+        td { padding: 11px 15px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:hover td { background: #fdf9f2; }
+        tr:last-child td { border-bottom: none; }
+
+        .badge {
+            display: inline-block; padding: 3px 9px;
+            border-radius: 20px; font-size: .75rem; font-weight: 600;
+        }
+        .b-ok   { background: #d4f0e2; color: var(--sage); }
+        .b-warn { background: #fef3cd; color: #856404; }
+        .b-none { background: #fde8e0; color: var(--rust); }
+
+        .row-btns { display: flex; gap: 5px; }
+
+        .empty { text-align: center; padding: 50px 20px; color: var(--muted); }
+        .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+        #toasts {
+            position: fixed; bottom: 24px; right: 24px;
+            display: flex; flex-direction: column; gap: 8px; z-index: 999;
+        }
+        .toast {
+            padding: 13px 20px; border-radius: 9px;
+            font-size: .86rem; font-weight: 500;
+            min-width: 240px; max-width: 360px;
+            animation: slideIn .22s ease, fadeOut .35s ease 2.8s forwards;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .t-ok  { background: var(--sage); color: #e8f5ef; }
+        .t-err { background: var(--rust); color: #fde8e0; }
+        .t-inf { background: var(--ink);  color: var(--gold-lt); }
+        @keyframes slideIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:none; } }
+        @keyframes fadeOut { to   { opacity:0; transform:translateX(20px); } }
+
+        .spin {
+            width: 15px; height: 15px;
+            border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+            border-radius: 50%; animation: spinning .65s linear infinite; display: inline-block;
+        }
+        @keyframes spinning { to { transform: rotate(360deg); } }
+
+        .recent-item {
+            padding: 9px 0; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .recent-item:last-child { border-bottom: none; }
+        .recent-item small { color: var(--muted); display: block; margin-top: 2px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="font-size:1.9rem">📚</div>
+    <div>
+        <h1>Library Management System</h1>
+        <p>com.library · Books · Service · Servlet · MySQL</p>
+    </div>
+</header>
+
+<div class="wrap">
+
+    <div class="tabs">
+        <button class="tab active" onclick="tab('dashboard')">📊 Dashboard</button>
+        <button class="tab"        onclick="tab('catalogue')">📖 Catalogue</button>
+        <button class="tab"        onclick="tab('add')">➕ Add Book</button>
+        <button class="tab"        onclick="tab('txn')">🔄 Issue / Return</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="panel-dashboard" class="panel active">
+        <div class="stats">
+            <div class="stat">      <div class="stat-label">Total Books</div>   <div class="stat-value" id="s-total">—</div></div>
+            <div class="stat green"><div class="stat-label">Available</div>     <div class="stat-value" id="s-avail">—</div></div>
+            <div class="stat red">  <div class="stat-label">Fully Issued</div>  <div class="stat-value" id="s-out">—</div></div>
+            <div class="stat">      <div class="stat-label">Total Copies</div>  <div class="stat-value" id="s-copies">—</div></div>
+        </div>
+        <div class="two-col">
+            <div class="card">
+                <div class="card-title">🔍 Quick Lookup</div>
+                <div class="field" style="margin-bottom:12px">
+                    <label>Book ID</label>
+                    <input type="number" id="ql-id" placeholder="e.g. 101" min="1"/>
+                </div>
+                <button class="btn btn-dark" onclick="quickLookup()">Search</button>
+                <div id="ql-result" style="margin-top:14px;font-size:.88rem"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">📋 Recent Books</div>
+                <div id="recent">Loading…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CATALOGUE -->
+    <div id="panel-catalogue" class="panel">
+        <div class="card">
+            <div class="card-title">📖 Book Catalogue</div>
+            <div class="search-row">
+                <input type="text" id="search" placeholder="Search by title or author…" oninput="filterTable()"/>
+                <button class="btn btn-ghost" onclick="loadCatalogue()">↻ Refresh</button>
+            </div>
+            <div style="overflow-x:auto">
+                <table>
+                    <thead>
+                    <tr><th>ID</th><th>Title</th><th>Author</th><th>Copies</th><th>Status</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody id="tbody">
+                    <tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div><p>Loading…</p></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD BOOK -->
+    <div id="panel-add" class="panel">
+        <div class="card" style="max-width:640px">
+            <div class="card-title">➕ Add New Book</div>
+            <div class="form-grid">
+                <div class="field"><label>Book ID *</label><input type="number" id="a-id" placeholder="e.g. 201" min="1"/></div>
+                <div class="field"><label>Copies *</label><input type="number" id="a-copies" placeholder="e.g. 3" min="0"/></div>
+                <div class="field full"><label>Title *</label><input type="text" id="a-title" placeholder="e.g. Clean Code"/></div>
+                <div class="field full"><label>Author *</label><input type="text" id="a-author" placeholder="e.g. Robert C. Martin"/></div>
+            </div>
+            <div class="btns">
+                <button class="btn btn-dark" id="btn-add" onclick="addBook()">📥 Add Book</button>
+                <button class="btn btn-ghost" onclick="clearForm()">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ISSUE / RETURN -->
+    <div id="panel-txn" class="panel">
+        <div class="two-col" style="margin-bottom:22px">
+            <div class="card">
+                <div class="card-title">📤 Issue a Book</div>
+                <div class="field" style="margin-bottom:12px"><label>Book ID *</label><input type="number" id="i-id" placeholder="e.g. 101" min="1"/></div>
+                <button class="btn btn-green" id="btn-issue" onclick="issueBook()">Issue Book</button>
+            </div>
+            <div class="card">
+                <div class="card-title">📥 Return a Book</div>
+                <div class="field" style="margin-bottom:12px"><label>Book ID *</label><input type="number" id="r-id" placeholder="e.g. 101" min="1"/></div>
+                <button class="btn btn-red" id="btn-return" onclick="returnBook()">Return Book</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">📜 Session Log</div>
+            <div style="overflow-x:auto">
+                <table>
+                    <thead><tr><th>#</th><th>Book ID</th><th>Action</th><th>Time</th></tr></thead>
+                    <tbody id="log-body">
+                    <tr><td colspan="4" style="color:var(--muted);padding:18px">No transactions yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div id="toasts"></div>
+
+<script>
+    const API = '/library/api/books';
+    let allBooks = [];
+    let logCount = 0;
+
+    function tab(name) {
+        const names = ['dashboard','catalogue','add','txn'];
+        document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', names[i] === name));
+        document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+        if (name === 'catalogue') loadCatalogue();
+        if (name === 'dashboard') loadDashboard();
+    }
+
+    async function get(url) {
+        const res = await fetch(url);
+        const data = await res.json().catch(() => ({ error: 'Bad response' }));
+        return { ok: res.ok, data };
+    }
+
+    async function send(url, method, body) {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body
+        });
+        const data = await res.json().catch(() => ({ error: 'Bad response' }));
+        return { ok: res.ok, data };
+    }
+
+    async function fetchBooks() {
+        try {
+            const { ok, data } = await get(API);
+            if (ok && Array.isArray(data)) { allBooks = data; return data; }
+            return [];
+        } catch { return []; }
+    }
+
+    async function loadDashboard() {
+        const books = await fetchBooks();
+        document.getElementById('s-total').textContent  = books.length;
+        document.getElementById('s-avail').textContent  = books.filter(b => b.availableCopies > 0).length;
+        document.getElementById('s-out').textContent    = books.filter(b => b.availableCopies === 0).length;
+        document.getElementById('s-copies').textContent = books.reduce((s, b) => s + b.availableCopies, 0);
+
+        const el = document.getElementById('recent');
+        if (!books.length) { el.textContent = 'No books yet.'; return; }
+        el.innerHTML = books.slice(-5).reverse().map(b =>
+            `<div class="recent-item">
+      <div><b>#${b.bookId}</b> ${x(b.title)}<small>${x(b.author)}</small></div>
+      <span class="badge ${b.availableCopies > 0 ? 'b-ok' : 'b-none'}">${b.availableCopies}</span>
+    </div>`
+        ).join('');
+    }
+
+    async function loadCatalogue() {
+        document.getElementById('tbody').innerHTML =
+            `<tr><td colspan="6"><div class="empty"><div class="spin" style="margin:auto;border-color:var(--border);border-top-color:var(--gold)"></div></div></td></tr>`;
+        const books = await fetchBooks();
+        renderTable(books);
+    }
+
+    function renderTable(books) {
+        const tbody = document.getElementById('tbody');
+        if (!books.length) {
+            tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">📭</div><p>No books found.</p></div></td></tr>`;
+            return;
+        }
+        tbody.innerHTML = books.map(b => {
+            const c = b.availableCopies;
+            const badge = c === 0 ? `<span class="badge b-none">Out of Stock</span>`
+                : c <= 1  ? `<span class="badge b-warn">Low (${c})</span>`
+                    : `<span class="badge b-ok">In Stock</span>`;
+            return `<tr>
+      <td><b>#${b.bookId}</b></td>
+      <td>${x(b.title)}</td>
+      <td>${x(b.author)}</td>
+      <td><b>${c}</b></td>
+      <td>${badge}</td>
+      <td><div class="row-btns">
+        <button class="btn btn-green btn-sm" onclick="doTxn(${b.bookId},'issue')">Issue</button>
+        <button class="btn btn-red   btn-sm" onclick="doTxn(${b.bookId},'return')">Return</button>
+      </div></td>
+    </tr>`;
+        }).join('');
+    }
+
+    function filterTable() {
+        const q = document.getElementById('search').value.toLowerCase();
+        renderTable(allBooks.filter(b =>
+            b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)
+        ));
+    }
+
+    async function addBook() {
+        const id     = document.getElementById('a-id').value.trim();
+        const title  = document.getElementById('a-title').value.trim();
+        const author = document.getElementById('a-author').value.trim();
+        const copies = document.getElementById('a-copies').value.trim();
+
+        if (!id || !title || !author || copies === '') {
+            toast('Fill in all fields.', 'err'); return;
+        }
+
+        busy('btn-add', true, 'Adding…');
+        const { ok, data } = await send(API, 'POST', new URLSearchParams({ bookId: id, title, author, availableCopies: copies }));
+        busy('btn-add', false, '📥 Add Book');
+
+        if (ok) { toast(`"${title}" added successfully!`, 'ok'); clearForm(); }
+        else     toast(data.error || 'Failed to add book.', 'err');
+    }
+
+    function clearForm() {
+        ['a-id', 'a-title', 'a-author', 'a-copies'].forEach(id => document.getElementById(id).value = '');
+    }
+
+    async function issueBook() {
+        const id = document.getElementById('i-id').value.trim();
+        if (!id) { toast('Enter a Book ID.', 'err'); return; }
+        busy('btn-issue', true, 'Issuing…');
+        await doTxn(id, 'issue');
+        busy('btn-issue', false, 'Issue Book');
+        document.getElementById('i-id').value = '';
+    }
+
+    async function returnBook() {
+        const id = document.getElementById('r-id').value.trim();
+        if (!id) { toast('Enter a Book ID.', 'err'); return; }
+        busy('btn-return', true, 'Returning…');
+        await doTxn(id, 'return');
+        busy('btn-return', false, 'Return Book');
+        document.getElementById('r-id').value = '';
+    }
+
+    async function doTxn(id, action) {
+        const { ok, data } = await fetch(`${API}/${action}?id=${id}`, { method: 'PUT' })
+            .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+            .catch(() => ({ ok: false, data: { error: 'Request failed' } }));
+
+        if (ok) {
+            toast(`Book #${id} ${action === 'issue' ? 'issued' : 'returned'} successfully.`, 'ok');
+            addLog(id, action.toUpperCase());
+            await fetchBooks();
+            if (document.getElementById('panel-catalogue').classList.contains('active')) renderTable(allBooks);
+        } else {
+            toast(data.error || `Could not ${action} book.`, 'err');
+        }
+    }
+
+    function addLog(bookId, type) {
+        logCount++;
+        const tbody = document.getElementById('log-body');
+        if (tbody.firstElementChild && tbody.firstElementChild.querySelector('[colspan]')) tbody.innerHTML = '';
+        tbody.insertAdjacentHTML('afterbegin', `<tr>
+    <td>${logCount}</td>
+    <td>#${bookId}</td>
+    <td><span class="badge ${type === 'ISSUE' ? 'b-warn' : 'b-ok'}">${type}</span></td>
+    <td>${new Date().toLocaleTimeString()}</td>
+  </tr>`);
+    }
+
+    async function quickLookup() {
+        const id = document.getElementById('ql-id').value.trim();
+        if (!id) { toast('Enter a Book ID.', 'err'); return; }
+        const { ok, data } = await get(`${API}?id=${id}`);
+        const el = document.getElementById('ql-result');
+        if (ok) {
+            el.innerHTML = `<div style="background:var(--parch);border-radius:8px;padding:13px;border:1px solid var(--border)">
+      <b style="font-family:var(--serif);font-size:1.05rem">${x(data.title)}</b>
+      <div style="color:var(--muted);margin-top:2px">by ${x(data.author)}</div>
+      <div style="margin-top:6px">Copies available: <b>${data.availableCopies}</b></div>
+    </div>`;
+        } else {
+            el.innerHTML = `<span style="color:var(--rust)">${x(data.error || 'Book not found.')}</span>`;
+        }
+    }
+
+    function toast(msg, type = 'inf') {
+        const el = document.createElement('div');
+        el.className = `toast t-${type}`;
+        el.textContent = msg;
+        document.getElementById('toasts').appendChild(el);
+        setTimeout(() => el.remove(), 3300);
+    }
+
+    function busy(id, on, label) {
+        const b = document.getElementById(id);
+        b.disabled = on;
+        if (on) {
+            b.dataset.orig = b.textContent;
+            b.innerHTML = `<span class="spin"></span> ${label}`;
+        } else {
+            b.textContent = b.dataset.orig || label;
+        }
+    }
+
+    function x(s) {
+        const d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML;
+    }
+
+    document.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
+</body>
+</html>
